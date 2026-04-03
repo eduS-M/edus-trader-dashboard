@@ -225,44 +225,75 @@ MARKET_KEYWORDS = [
     'market','nasdaq','s&p','dow','bitcoin','crypto','dollar','powell',
     'economy','gdp','cpi','jobs','employment','china','recession',
     'earnings','stocks','wall street','treasury','rate cut','ecb',
+    'rate hike','bank','bonds','yield','debt','fiscal','monetary',
 ]
+
+# RSS ordenados por fiabilidad en entornos cloud
 RSS_FEEDS = [
-    ('Reuters Markets', 'https://feeds.reuters.com/reuters/businessNews'),
-    ('AP Markets',      'https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US'),
-    ('MarketWatch',     'https://feeds.marketwatch.com/marketwatch/topstories/'),
+    ('Reuters',    'https://feeds.reuters.com/reuters/businessNews',                          'text/xml'),
+    ('AP Markets', 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US', 'text/xml'),
+    ('MarketWatch','https://feeds.marketwatch.com/marketwatch/topstories/',                   'text/xml'),
+    ('CNBC',       'https://www.cnbc.com/id/100003114/device/rss/rss.html',                   'text/xml'),
+    ('Investing',  'https://www.investing.com/rss/news_25.rss',                               'text/xml'),
 ]
+
+def _parse_rss(r_content):
+    """Intenta parsear RSS con xml parser, fallback a html.parser"""
+    try:
+        return BeautifulSoup(r_content, 'xml')
+    except:
+        return BeautifulSoup(r_content, 'html.parser')
 
 @app.route('/api/news')
 def api_news():
     def fetch():
         all_items = []
-        for source_name, feed_url in RSS_FEEDS:
+        hdrs = {
+            **HDRS,
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        }
+        for source_name, feed_url, _ in RSS_FEEDS:
             try:
-                r = requests.get(feed_url, headers=HDRS, timeout=10)
+                r = requests.get(feed_url, headers=hdrs, timeout=12)
                 if r.status_code != 200:
+                    print(f'[RSS] {source_name}: HTTP {r.status_code}')
                     continue
-                soup = BeautifulSoup(r.content, 'xml')
-                for item in soup.find_all('item')[:15]:
+                soup = _parse_rss(r.content)
+                items = soup.find_all('item')
+                if not items:
+                    # Algunos feeds usan <entry> (Atom)
+                    items = soup.find_all('entry')
+                count = 0
+                for item in items[:20]:
                     title = item.find('title')
-                    pub   = item.find('pubDate')
+                    pub   = item.find('pubDate') or item.find('published') or item.find('updated')
                     link  = item.find('link')
                     txt   = title.get_text(strip=True) if title else ''
                     if not txt or not any(kw in txt.lower() for kw in MARKET_KEYWORDS):
                         continue
                     pub_str = pub.get_text(strip=True) if pub else ''
-                    try:
-                        pub_dt = datetime.strptime(pub_str[:25], '%a, %d %b %Y %H:%M:%S')
-                    except:
-                        pub_dt = datetime.now()
+                    pub_dt  = datetime.now()
+                    for fmt in ('%a, %d %b %Y %H:%M:%S %z','%a, %d %b %Y %H:%M:%S','%Y-%m-%dT%H:%M:%S'):
+                        try:
+                            pub_dt = datetime.strptime(pub_str[:25], fmt[:len(pub_str)])
+                            break
+                        except:
+                            continue
+                    lnk = ''
+                    if link:
+                        lnk = link.get('href') or link.get_text(strip=True) or ''
                     all_items.append({
                         'title':     txt,
                         'source':    source_name,
-                        'link':      link.get_text(strip=True) if link else '',
+                        'link':      lnk,
                         'timestamp': pub_dt.isoformat(),
                     })
+                    count += 1
+                print(f'[RSS] {source_name}: {count} noticias')
             except Exception as e:
-                print(f'RSS error {source_name}: {e}')
+                print(f'[RSS] {source_name}: {e}')
         all_items.sort(key=lambda x: x['timestamp'], reverse=True)
+        print(f'[RSS] Total: {len(all_items)} noticias')
         return all_items[:25]
     return jsonify(get_cached('news', CACHE_TTL['news'], fetch))
 
