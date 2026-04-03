@@ -53,11 +53,17 @@
     /* VIX */
     .vix-card{grid-column:1/6}
     .vix-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
-    .mbox{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+    .mbox{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 10px}
     .mbox .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-    .mbox .val{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;margin-top:4px}
+    .mbox .val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;margin-top:4px}
     .val.accent{color:var(--accent)}.val.up{color:var(--green)}.val.dn{color:var(--red)}
     .chart-wrap{height:230px;position:relative}
+
+    /* CALENDAR FILTER */
+    .cal-filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+    .cf{padding:4px 10px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.05em;
+      cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;transition:all .2s}
+    .cf.active{background:var(--accent);color:#000;border-color:var(--accent)}
 
     /* NEWS */
     .news-card{grid-column:6/9}
@@ -209,6 +215,13 @@
     <div class="card-head">
       <h2>📅 Calendario Económico</h2>
       <span class="sub">Forex Factory · Hoy</span>
+    </div>
+    <div class="cal-filters">
+      <button class="cf active" onclick="setCalFilter('USD',this)">🇺🇸 USD</button>
+      <button class="cf" onclick="setCalFilter('EUR',this)">🇪🇺 EUR</button>
+      <button class="cf" onclick="setCalFilter('GBP',this)">🇬🇧 GBP</button>
+      <button class="cf" onclick="setCalFilter('JPY',this)">🇯🇵 JPY</button>
+      <button class="cf" onclick="setCalFilter('ALL',this)">🌐 Todos</button>
     </div>
     <div id="newsList" class="news-list">
       <span class="spin"></span><span style="color:var(--muted);font-size:12px">Cargando...</span>
@@ -418,6 +431,15 @@ function switchHeat(group,btn){
 /* ── CALENDAR ── */
 const IMPACT={'High':'red','Medium':'orange','Low':'yellow'};
 let calEvents=[];
+let calFilter='USD'; // Predeterminado: solo USD
+
+function setCalFilter(ccy, btn){
+  calFilter=ccy;
+  document.querySelectorAll('.cf').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderCalendar();
+}
+
 async function loadCalendar(){
   try{
     calEvents=await(await fetch(API+'/calendar')).json();
@@ -433,7 +455,14 @@ function renderCalendar(){
   const el=document.getElementById('newsList');
   if(!calEvents.length){el.innerHTML='<div style="color:var(--muted);font-size:12px">Sin eventos hoy</div>';return;}
 
-  el.innerHTML=calEvents.map(ev=>{
+  // Filtrar por divisa seleccionada
+  const filtered = calFilter==='ALL' ? calEvents : calEvents.filter(ev=>ev.currency===calFilter);
+  if(!filtered.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px 0">Sin eventos para '+calFilter+' hoy</div>';
+    return;
+  }
+
+  el.innerHTML=filtered.map(ev=>{
     const evDate=parseEventTime(ev.time,nyNow);
     const diffMs=evDate?evDate-nyNow:null;
     const diffMin=diffMs!=null?diffMs/60000:null;
@@ -499,24 +528,29 @@ function getMarketEffect(event,currency){
 /* ── SOCIAL NEWS ── */
 async function loadNews(){
   try{
-    const d=await(await fetch(API+'/news')).json();
+    const resp = await fetch(API+'/news');
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const d = await resp.json();
     const el=document.getElementById('socialFeed');
-    if(!d.length){el.innerHTML='<div style="color:var(--muted);font-size:12px">Sin noticias disponibles</div>';return;}
+    if(!Array.isArray(d)||!d.length){
+      el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px">Sin noticias disponibles en este momento</div>';
+      return;
+    }
     el.innerHTML=d.map(item=>{
       const ago=getAgo(new Date(item.timestamp));
       const tag=getImpactTag(item.title);
       const hasLink=item.link&&item.link.startsWith('http');
-      const wrap=hasLink
-        ?`href="${item.link}" target="_blank" rel="noopener"`
-        :'';
-      return `<${hasLink?'a':'div'} ${wrap} class="si" style="${hasLink?'text-decoration:none;cursor:pointer;':''}">
-        <div class="si-src">📰 ${item.source}${hasLink?' <span style=\"font-size:9px;opacity:.6\">↗</span>':''}</div>
+      const wrap=hasLink?`href="${item.link}" target="_blank" rel="noopener"`:'';
+      const tag_el=`<${hasLink?'a':'div'} ${wrap} class="si" style="${hasLink?'text-decoration:none;display:block;':''}">
+        <div class="si-src">📰 ${item.source}${hasLink?' <span style=\"font-size:9px;opacity:.6;margin-left:3px\">↗</span>':''}</div>
         <div class="si-txt">${item.title.slice(0,130)}${item.title.length>130?'…':''}</div>
         <div class="si-foot">${tag}<span class="si-ago">${ago}</span></div>
       </${hasLink?'a':'div'}>`;
+      return tag_el;
     }).join('');
   }catch(e){
-    document.getElementById('socialFeed').innerHTML='<div class="err">⚠ Servidor apagado</div>';
+    document.getElementById('socialFeed').innerHTML=
+      `<div class="err" style="padding:10px">⚠ ${e.message}</div>`;
   }
 }
 
