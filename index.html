@@ -54,8 +54,8 @@
     .vix-card{grid-column:1/6}
     .vix-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
     .mbox{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 10px}
-    .mbox .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-    .mbox .val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;margin-top:4px}
+    .mbox .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .mbox .val{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;margin-top:3px}
     .val.accent{color:var(--accent)}.val.up{color:var(--green)}.val.dn{color:var(--red)}
     .chart-wrap{height:230px;position:relative}
 
@@ -430,8 +430,7 @@ function switchHeat(group,btn){
 
 /* ── CALENDAR ── */
 const IMPACT={'High':'red','Medium':'orange','Low':'yellow'};
-let calEvents=[];
-let calFilter='USD'; // Predeterminado: solo USD
+let calEvents=[], calFilter='USD';
 
 function setCalFilter(ccy, btn){
   calFilter=ccy;
@@ -455,10 +454,10 @@ function renderCalendar(){
   const el=document.getElementById('newsList');
   if(!calEvents.length){el.innerHTML='<div style="color:var(--muted);font-size:12px">Sin eventos hoy</div>';return;}
 
-  // Filtrar por divisa seleccionada
+  // Aplicar filtro por divisa (USD predeterminado)
   const filtered = calFilter==='ALL' ? calEvents : calEvents.filter(ev=>ev.currency===calFilter);
   if(!filtered.length){
-    el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px 0">Sin eventos para '+calFilter+' hoy</div>';
+    el.innerHTML=`<div style="color:var(--muted);font-size:12px;padding:8px 0">Sin eventos ${calFilter} hoy</div>`;
     return;
   }
 
@@ -528,29 +527,28 @@ function getMarketEffect(event,currency){
 /* ── SOCIAL NEWS ── */
 async function loadNews(){
   try{
-    const resp = await fetch(API+'/news');
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
-    const d = await resp.json();
+    const d=await(await fetch(API+'/news')).json();
     const el=document.getElementById('socialFeed');
     if(!Array.isArray(d)||!d.length){
-      el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px">Sin noticias disponibles en este momento</div>';
+      el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px">Sin noticias disponibles</div>';
       return;
     }
     el.innerHTML=d.map(item=>{
-      const ago=getAgo(new Date(item.timestamp));
+      // Normalizar timestamp a UTC para evitar "hace 46113d"
+      const ts=item.timestamp||'';
+      const tsNorm=ts&&!ts.includes('+')&&!ts.endsWith('Z') ? ts+'Z' : ts;
+      const ago=getAgo(new Date(tsNorm));
       const tag=getImpactTag(item.title);
       const hasLink=item.link&&item.link.startsWith('http');
       const wrap=hasLink?`href="${item.link}" target="_blank" rel="noopener"`:'';
-      const tag_el=`<${hasLink?'a':'div'} ${wrap} class="si" style="${hasLink?'text-decoration:none;display:block;':''}">
-        <div class="si-src">📰 ${item.source}${hasLink?' <span style=\"font-size:9px;opacity:.6;margin-left:3px\">↗</span>':''}</div>
+      return `<${hasLink?'a':'div'} ${wrap} class="si" style="${hasLink?'text-decoration:none;display:block;cursor:pointer;':''}">
+        <div class="si-src">📰 ${item.source}${hasLink?' <span style="font-size:9px;opacity:.6;margin-left:3px">↗</span>':''}</div>
         <div class="si-txt">${item.title.slice(0,130)}${item.title.length>130?'…':''}</div>
         <div class="si-foot">${tag}<span class="si-ago">${ago}</span></div>
       </${hasLink?'a':'div'}>`;
-      return tag_el;
     }).join('');
   }catch(e){
-    document.getElementById('socialFeed').innerHTML=
-      `<div class="err" style="padding:10px">⚠ ${e.message}</div>`;
+    document.getElementById('socialFeed').innerHTML=`<div class="err">⚠ ${e.message}</div>`;
   }
 }
 
@@ -564,9 +562,13 @@ function getImpactTag(t){
 }
 
 function getAgo(d){
+  if(!d||isNaN(d.getTime())) return '';
   const m=Math.round((Date.now()-d)/60000);
-  if(m<1)return 'Ahora';if(m<60)return `hace ${m}m`;
-  if(m<1440)return `hace ${Math.round(m/60)}h`;return `hace ${Math.round(m/1440)}d`;
+  if(m<0||m>20160) return '';   // ignorar fechas futuras o >14 días
+  if(m<1)return 'Ahora';
+  if(m<60)return `hace ${m}m`;
+  if(m<1440)return `hace ${Math.round(m/60)}h`;
+  return `hace ${Math.round(m/1440)}d`;
 }
 
 /* ── GEX: GAMMA / DELTA / VANNA ── */
