@@ -161,42 +161,99 @@ def api_heatmap(group):
     return jsonify(get_cached(cache_key, CACHE_TTL['heatmap'], fetch))
 
 # ─── CALENDARIO FOREX FACTORY ───
+# Lógica basada en EduS_News_Sync.py (V6 consolidada):
+# - cloudscraper para bypassear Cloudflare
+# - Parsing correcto de clases icon--ff-impact-red/ora/yel
+# - Memoria de fecha y hora entre filas (como el CSV de NinjaTrader)
+# - Hora de FF está en ET — se devuelve tal cual para que el frontend calcule
+#   el countdown en horario de NY
 @app.route('/api/calendar')
 def api_calendar():
     def fetch():
         try:
+            import cloudscraper
             today = date.today()
             url   = f"https://www.forexfactory.com/calendar?day={today.strftime('%m%d')}.{today.year}"
-            r = requests.get(url, headers=HDRS, timeout=15)
+            scraper = cloudscraper.create_scraper(
+                browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
+            )
+            r = scraper.get(url, timeout=20)
             if r.status_code != 200:
                 raise Exception(f'HTTP {r.status_code}')
-            soup   = BeautifulSoup(r.text, 'html.parser')
-            rows   = soup.select('tr.calendar__row')
-            events = []
-            last_t = ''
-            KEEP   = {'USD','EUR','GBP','JPY','CAD','AUD','CHF','NZD'}
+
+            soup  = BeautifulSoup(r.content, 'html.parser')
+            table = soup.find('table', class_='calendar__table')
+            rows  = table.find_all('tr') if table else soup.select('tr.calendar__row')
+
+            events      = []
+            last_date   = ''
+            last_time   = ''
+            KEEP        = {'USD','EUR','GBP','JPY','CAD','AUD','CHF','NZD'}
+            YEAR        = str(today.year)
+
             for row in rows:
+                cls = row.get('class', [])
+                if 'calendar__row' not in cls:
+                    continue
                 try:
-                    te  = row.select_one('.calendar__time')
-                    t   = te.get_text(strip=True) if te else ''
-                    if t and t not in ('All Day','Tentative',''):
-                        last_t = t
-                    ce  = row.select_one('.calendar__currency')
-                    ccy = ce.get_text(strip=True) if ce else ''
+                    # ── FECHA (con memoria entre filas) ──
+                    dc = row.find('td', class_='calendar__date')
+                    if dc:
+                        txt = dc.get_text().strip()
+                        if txt:
+                            last_date = f"{txt} {YEAR}"
+                            last_time = ''          # reinicia hora al cambiar de día
+                    if not last_date:
+                        continue
+
+                    # ── HORA (con memoria entre filas, igual que tu CSV) ──
+                    tc = row.find('td', class_='calendar__time')
+                    t  = tc.get_text(strip=True) if tc else ''
+                    if t and 'Day' not in t and 'Tentative' not in t:
+                        last_time = t
+                    if not last_time:
+                        continue
+
+                    # ── DIVISA ──
+                    cc  = row.find('td', class_='calendar__currency')
+                    ccy = cc.get_text(strip=True) if cc else ''
                     if ccy not in KEEP:
                         continue
-                    ie  = row.select_one('.calendar__impact span')
-                    ic  = (ie.get('class') or [''])[0] if ie else ''
-                    imp = 'High' if 'red' in ic else 'Medium' if 'orange' in ic else 'Low'
-                    ee  = row.select_one('.calendar__event-title') or row.select_one('.calendar__event')
+
+                    # ── IMPACTO — clases reales de FF: icon--ff-impact-red/ora/yel ──
+                    ic  = row.find('td', class_='calendar__impact')
+                    imp = 'Low'
+                    if ic:
+                        sp  = ic.find('span')
+                        cls2 = sp.get('class', []) if sp else []
+                        cls_str = ' '.join(cls2)
+                        if 'icon--ff-impact-red' in cls_str:
+                            imp = 'High'
+                        elif 'icon--ff-impact-ora' in cls_str:
+                            imp = 'Medium'
+                        elif 'icon--ff-impact-yel' in cls_str:
+                            imp = 'Low'
+                        else:
+                            continue    # sin impacto conocido, saltar
+
+                    # ── EVENTO ──
+                    ee  = row.find('td', class_='calendar__event')
                     evt = ee.get_text(strip=True) if ee else ''
                     if not evt:
                         continue
-                    ac = row.select_one('.calendar__actual')
-                    fc = row.select_one('.calendar__forecast')
-                    pr = row.select_one('.calendar__previous')
+
+                    # ── RESULTADO / ESTIMADO / ANTERIOR ──
+                    ac = row.find('td', class_='calendar__actual')
+                    fc = row.find('td', class_='calendar__forecast')
+                    pr = row.find('td', class_='calendar__previous')
+
+                    # ── CONVERTIR HORA FF (ET string) a formato consistente ──
+                    # FF entrega ej: 8:30am 2:00pm — convertimos a HH:MM 24h ET
+                    time_24 = _parse_ff_time(last_time)
+
                     events.append({
-                        'time':     last_t,
+                        'time':     time_24,        # HH:MM en ET (24h)
+                        'time_raw': last_time,      # original de FF
                         'currency': ccy,
                         'impact':   imp,
                         'event':    evt,
@@ -204,67 +261,153 @@ def api_calendar():
                         'forecast': fc.get_text(strip=True) if fc else '',
                         'previous': pr.get_text(strip=True) if pr else '',
                     })
-                except:
+                except Exception as ex:
+                    print(f'[Cal row] {ex}')
                     continue
+
+            print(f'[Calendar] {len(events)} eventos encontrados')
             return events if events else _fallback_calendar()
+
         except Exception as e:
-            print(f'Calendar error: {e}')
+            print(f'[Calendar] Error: {e}')
             return _fallback_calendar()
     return jsonify(get_cached('calendar', CACHE_TTL['calendar'], fetch))
 
+def _parse_ff_time(time_str):
+    """
+    Convierte hora de FF (ej: '8:30am', '2:00pm', '10:00am') a HH:MM 24h.
+    FF muestra las horas en ET (Eastern Time) — sin conversión adicional.
+    """
+    try:
+        ts = time_str.strip().lower().replace(' ','')
+        dt = datetime.strptime(ts, '%I:%M%p')
+        return dt.strftime('%H:%M')
+    except:
+        return time_str
+
 def _fallback_calendar():
     return [
-        {'time':'8:30am','currency':'USD','impact':'High',  'event':'Initial Jobless Claims','actual':'','forecast':'225K','previous':'219K'},
-        {'time':'10:00am','currency':'USD','impact':'High', 'event':'Fed Chair Powell Speech','actual':'','forecast':'',   'previous':''},
-        {'time':'2:00pm', 'currency':'EUR','impact':'High', 'event':'ECB President Speech',  'actual':'','forecast':'',   'previous':''},
+        {'time':'08:30','time_raw':'8:30am','currency':'USD','impact':'High',  'event':'Initial Jobless Claims','actual':'','forecast':'225K','previous':'219K'},
+        {'time':'10:00','time_raw':'10:00am','currency':'USD','impact':'High', 'event':'Fed Chair Powell Speech','actual':'','forecast':'',   'previous':''},
+        {'time':'14:00','time_raw':'2:00pm', 'currency':'EUR','impact':'High', 'event':'ECB President Speech',  'actual':'','forecast':'',   'previous':''},
     ]
 
-# ─── NOTICIAS RSS ───
+# ─── NOTICIAS DE MERCADO ───
+# Reuters y MarketWatch están bloqueados en Railway (firewall corporativo)
+# Usamos fuentes que SÍ responden desde IPs cloud:
+#   - GNews API (gratis, 100 req/día) — agrega noticias financieras reales
+#   - Finnhub news (gratis con key, sin key = limitado)
+#   - Yahoo Finance RSS de noticias de compañías (funciona en cloud)
+#   - Newsdata.io API gratis (200 req/día)
+
 MARKET_KEYWORDS = [
     'fed','federal reserve','trump','tariff','inflation','interest rate',
     'market','nasdaq','s&p','dow','bitcoin','crypto','dollar','powell',
     'economy','gdp','cpi','jobs','employment','china','recession',
     'earnings','stocks','wall street','treasury','rate cut','ecb',
+    'rate hike','bonds','yield','bank','fiscal','monetary','debt',
 ]
-RSS_FEEDS = [
-    ('Reuters Markets', 'https://feeds.reuters.com/reuters/businessNews'),
-    ('AP Markets',      'https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US'),
-    ('MarketWatch',     'https://feeds.marketwatch.com/marketwatch/topstories/'),
+
+# Yahoo Finance RSS por símbolo — estos SÍ funcionan en Railway
+YF_RSS_FEEDS = [
+    ('Yahoo Finance SPY', 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=SPY&region=US&lang=en-US'),
+    ('Yahoo Finance QQQ', 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=QQQ&region=US&lang=en-US'),
+    ('Yahoo Finance GLD', 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=GLD&region=US&lang=en-US'),
+    ('Yahoo Finance DX-Y.NYB', 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=DX-Y.NYB&region=US&lang=en-US'),
 ]
 
 @app.route('/api/news')
 def api_news():
     def fetch():
         all_items = []
-        for source_name, feed_url in RSS_FEEDS:
+        seen_titles = set()  # evitar duplicados
+
+        # ── 1. Yahoo Finance RSS por símbolo (siempre funciona) ──
+        for source_name, feed_url in YF_RSS_FEEDS:
             try:
-                r = requests.get(feed_url, headers=HDRS, timeout=10)
+                r = requests.get(feed_url, headers=HDRS, timeout=12)
                 if r.status_code != 200:
+                    print(f'[RSS] {source_name}: HTTP {r.status_code}')
                     continue
-                soup = BeautifulSoup(r.content, 'xml')
-                for item in soup.find_all('item')[:15]:
+                try:
+                    soup = BeautifulSoup(r.content, 'xml')
+                except:
+                    soup = BeautifulSoup(r.content, 'html.parser')
+                for item in soup.find_all('item')[:10]:
                     title = item.find('title')
                     pub   = item.find('pubDate')
                     link  = item.find('link')
                     txt   = title.get_text(strip=True) if title else ''
-                    if not txt or not any(kw in txt.lower() for kw in MARKET_KEYWORDS):
+                    if not txt or txt in seen_titles:
                         continue
+                    seen_titles.add(txt)
                     pub_str = pub.get_text(strip=True) if pub else ''
-                    try:
-                        pub_dt = datetime.strptime(pub_str[:25], '%a, %d %b %Y %H:%M:%S')
-                    except:
-                        pub_dt = datetime.now()
+                    pub_dt  = _parse_rss_date(pub_str)
+                    lnk = ''
+                    if link:
+                        lnk = link.get('href') or link.get_text(strip=True) or ''
                     all_items.append({
                         'title':     txt,
-                        'source':    source_name,
-                        'link':      link.get_text(strip=True) if link else '',
+                        'source':    'Yahoo Finance',
+                        'link':      lnk,
                         'timestamp': pub_dt.isoformat(),
                     })
+                print(f'[RSS] {source_name}: OK')
             except Exception as e:
-                print(f'RSS error {source_name}: {e}')
-        all_items.sort(key=lambda x: x['timestamp'], reverse=True)
-        return all_items[:25]
+                print(f'[RSS] {source_name}: {e}')
+
+        # ── 2. GNews API (100 req/día gratis, sin key en modo trial) ──
+        try:
+            r = requests.get(
+                'https://gnews.io/api/v4/search',
+                params={
+                    'q':        'stock market OR federal reserve OR inflation OR tariff',
+                    'lang':     'en',
+                    'country':  'us',
+                    'max':      10,
+                    'apikey':   os.environ.get('GNEWS_KEY', ''),
+                },
+                headers=HDRS, timeout=10
+            )
+            if r.status_code == 200:
+                for art in r.json().get('articles', []):
+                    txt = art.get('title','')
+                    if not txt or txt in seen_titles: continue
+                    seen_titles.add(txt)
+                    pub_dt = _parse_rss_date(art.get('publishedAt',''))
+                    all_items.append({
+                        'title':     txt,
+                        'source':    art.get('source',{}).get('name','GNews'),
+                        'link':      art.get('url',''),
+                        'timestamp': pub_dt.isoformat(),
+                    })
+                print(f'[GNews] {len(r.json().get("articles",[]))} artículos')
+        except Exception as e:
+            print(f'[GNews] {e}')
+
+        # ── 3. Filtrar por keywords de mercado ──
+        filtered = [i for i in all_items if any(kw in i['title'].lower() for kw in MARKET_KEYWORDS)]
+        # Si hay poco después del filtro, mostrar todos los de Yahoo Finance de todas formas
+        if len(filtered) < 5:
+            filtered = all_items
+
+        filtered.sort(key=lambda x: x['timestamp'], reverse=True)
+        print(f'[News] Total final: {len(filtered[:25])} noticias')
+        return filtered[:25]
+
     return jsonify(get_cached('news', CACHE_TTL['news'], fetch))
+
+def _parse_rss_date(pub_str):
+    """Parsea fechas RSS en múltiples formatos, siempre retorna datetime"""
+    for fmt in ('%a, %d %b %Y %H:%M:%S %z', '%a, %d %b %Y %H:%M:%S',
+                '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%dT%H:%M:%S%z'):
+        try:
+            dt = datetime.strptime(pub_str[:len(fmt)+5].strip(), fmt)
+            # Quitar timezone para consistencia (guardamos como UTC naive)
+            return dt.replace(tzinfo=None) if hasattr(dt, 'tzinfo') and dt.tzinfo else dt
+        except:
+            continue
+    return datetime.utcnow()  # fallback: ahora en UTC
 
 # ─── GEX: GAMMA / DELTA / VANNA EXPOSURE ───
 def _norm_cdf(x):
