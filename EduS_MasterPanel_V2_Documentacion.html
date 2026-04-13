@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduS_MasterPanel_V2 — Documentación para Traders Junior</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #222636;
+  --text: #e2e4ed;
+  --text2: #9da3b4;
+  --text3: #5c637a;
+  --green: #00c850;
+  --green-bg: rgba(0,200,80,0.10);
+  --green-bd: rgba(0,200,80,0.30);
+  --yellow: #ffd200;
+  --yellow-bg: rgba(255,210,0,0.10);
+  --yellow-bd: rgba(255,210,0,0.30);
+  --red: #dc3232;
+  --red-bg: rgba(220,50,50,0.10);
+  --red-bd: rgba(220,50,50,0.30);
+  --blue: #4db8e8;
+  --blue-bg: rgba(77,184,232,0.10);
+  --purple: #b482ff;
+  --purple-bg: rgba(180,130,255,0.10);
+  --purple-bd: rgba(180,130,255,0.35);
+  --orange: #ff8c00;
+  --border: rgba(255,255,255,0.07);
+  --r: 8px;
+  --font: 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Consolas', 'Cascadia Code', monospace;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
+a { color: var(--blue); text-decoration: none; }
+
+/* ── Layout ── */
+.wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+header h1 { font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; }
+header .sub { font-size: 0.9rem; color: var(--text2); }
+.v2-tag { display: inline-block; background: var(--purple-bg); border: 1px solid var(--purple-bd); color: var(--purple); border-radius: 4px; padding: 2px 10px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; margin-left: 10px; vertical-align: middle; }
+
+h2 { font-size: 1.15rem; font-weight: 700; color: #fff; margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1rem; font-weight: 600; color: var(--blue); margin: 1.5rem 0 0.5rem; }
+p  { color: var(--text2); margin-bottom: 0.75rem; font-size: 0.95rem; }
+strong { color: var(--text); }
+
+/* ── Cards ── */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 1.2rem 1.4rem; margin-bottom: 1rem; }
+.card-green  { border-left: 4px solid var(--green);  background: var(--green-bg); }
+.card-yellow { border-left: 4px solid var(--yellow); background: var(--yellow-bg); }
+.card-red    { border-left: 4px solid var(--red);    background: var(--red-bg); }
+.card-purple { border-left: 4px solid var(--purple); background: var(--purple-bg); }
+.card-blue   { border-left: 4px solid var(--blue);   background: var(--blue-bg); }
+
+.card-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+.card-green  .card-title { color: var(--green); }
+.card-yellow .card-title { color: var(--yellow); }
+.card-red    .card-title { color: var(--red); }
+.card-purple .card-title { color: var(--purple); }
+.card-blue   .card-title { color: var(--blue); }
+
+/* ── Semáforo visual ── */
+.semaforo { display: flex; gap: 12px; align-items: center; margin: 1rem 0; }
+.bola { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+.bola-verde   { background: var(--green); box-shadow: 0 0 14px rgba(0,200,80,0.5); }
+.bola-amarilla{ background: var(--yellow); box-shadow: 0 0 14px rgba(255,210,0,0.5); }
+.bola-roja    { background: var(--red); box-shadow: 0 0 14px rgba(220,50,50,0.5); }
+.bola-off     { background: #2a2d3a; }
+
+/* ── Tabla condiciones ── */
+.cond-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+.cond-table th { background: var(--bg3); color: var(--text2); font-weight: 600; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.cond-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+.cond-table tr:last-child td { border-bottom: none; }
+.cond-table tr:hover td { background: rgba(255,255,255,0.02); }
+.check { color: var(--green); font-weight: 700; }
+.cross { color: var(--red); font-weight: 700; }
+.warn  { color: var(--yellow); font-weight: 700; }
+
+/* ── Code block ── */
+pre { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r); padding: 1rem 1.2rem; font-family: var(--mono); font-size: 0.82rem; color: #c8d0e8; overflow-x: auto; margin: 0.75rem 0 1.25rem; line-height: 1.55; }
+code { font-family: var(--mono); font-size: 0.85em; background: var(--bg3); padding: 1px 6px; border-radius: 3px; color: #a8d0f0; }
+
+/* ── Timeline de capas ── */
+.layers { display: flex; flex-direction: column; gap: 0; margin: 1rem 0 1.5rem; }
+.layer { display: flex; gap: 0; align-items: stretch; }
+.layer-num { display: flex; align-items: center; justify-content: center; width: 36px; flex-shrink: 0; position: relative; }
+.layer-num::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 100%; background: var(--border); transform: translateX(-50%); }
+.layer:last-child .layer-num::after { display: none; }
+.layer-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+.dot-1 { background: #1e3a5f; color: var(--blue); border: 2px solid var(--blue); }
+.dot-2 { background: #1e3a1e; color: var(--green); border: 2px solid var(--green); }
+.dot-3 { background: #3a1e5f; color: var(--purple); border: 2px solid var(--purple); }
+.layer-body { flex: 1; padding: 0.8rem 1rem 1.2rem; }
+.layer-title { font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 0.3rem; }
+.layer-sub   { font-size: 0.88rem; color: var(--text2); }
+
+/* ── Comparativa V1 vs V2 ── */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.compare-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 1rem 1.2rem; }
+.compare-panel h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; }
+.v1 h4 { color: var(--text2); }
+.v2 h4 { color: var(--purple); }
+.compare-panel ul { padding-left: 1.2rem; color: var(--text2); font-size: 0.88rem; }
+.compare-panel li { margin-bottom: 0.4rem; }
+
+/* ── Nota / tip ── */
+.tip { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--orange); border-radius: var(--r); padding: 0.9rem 1.2rem; font-size: 0.88rem; color: var(--text2); margin: 1rem 0; }
+.tip strong { color: var(--orange); }
+
+/* ── Visual panel mockup ── */
+.panel-mock { background: #0c0e16; border: 1.5px solid #46507a; border-radius: 8px; padding: 14px 16px; font-family: var(--mono); font-size: 0.82rem; line-height: 1.9; max-width: 340px; }
+.pm-title  { color: #c8cce0; font-weight: 700; text-align: center; border-bottom: 1px solid #2a2d40; padding-bottom: 6px; margin-bottom: 8px; font-size: 0.85rem; }
+.pm-v2tag  { color: var(--purple); font-size: 0.75rem; }
+.pm-green  { color: var(--green); }
+.pm-yellow { color: var(--yellow); }
+.pm-red    { color: var(--red); }
+.pm-gray   { color: #5c637a; }
+.pm-cyan   { color: var(--blue); }
+.pm-orange { color: var(--orange); }
+.pm-purple { color: var(--purple); }
+.pm-sep    { color: #2a2d40; }
+
+@media (max-width: 600px) {
+  .compare { grid-template-columns: 1fr; }
+  .semaforo { gap: 8px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>EduS_MasterPanel <span class="v2-tag">V2</span></h1>
+  <p class="sub">Documentación completa para Traders Junior · NinjaTrader 8 · Sistema EduS_Trader</p>
+</header>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>1. ¿Qué es este indicador?</h2>
+
+<p>El <strong>EduS_MasterPanel</strong> es el "cerebro visual" del sistema EduS_Trader. Muestra en un solo panel en el gráfico <strong>todo lo que necesitas saber</strong> para decidir si hay una oportunidad de entrada o no: el semáforo de probabilidad, las 4 señales de tendencia, los precios de entrada/stop/target y los niveles del canal Keltner.</p>
+
+<p>La versión <strong>V2</strong> agrega una condición adicional (más estricta) para que el semáforo se ponga en VERDE. Esta versión corre <strong>en paralelo a la V1</strong> para que puedas comparar en el mismo gráfico cuándo una hubiera activado verde y la otra no.</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>2. Las 3 capas del semáforo</h2>
+
+<div class="layers">
+  <div class="layer">
+    <div class="layer-num"><div class="layer-dot dot-1">1</div></div>
+    <div class="layer-body">
+      <div class="layer-title">Capa 1 — Dirección (4 señales de tendencia)</div>
+      <div class="layer-sub">Evalúa si los 4 indicadores de tendencia apuntan en la misma dirección. Necesitas las 4 alineadas (o 3 en algunos casos para amarillo).</div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-num"><div class="layer-dot dot-2">2</div></div>
+    <div class="layer-body">
+      <div class="layer-title">Capa 2 — Zona AVWAP (distancia al VWAP activo)</div>
+      <div class="layer-sub">Evalúa qué tan cerca está el precio del AVWAP activo (ancla del swing). Precio cerca = mayor probabilidad de setup limpio.</div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-num"><div class="layer-dot dot-3">3</div></div>
+    <div class="layer-body">
+      <div class="layer-title">Capa 3 — Posición AVWAP vs Keltner BM <span class="v2-tag">V2 NUEVO</span></div>
+      <div class="layer-sub">Verifica que el AVWAP esté en el lado correcto de la línea media (BM) del canal Keltner. Confirma que el precio está en la mitad "correcta" del canal.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>3. Condiciones del semáforo — explicación completa</h2>
+
+<!-- VERDE -->
+<div class="card card-green">
+  <div class="card-title">🟢 SEMÁFORO VERDE — Alta probabilidad (las 3 capas activas)</div>
+  <table class="cond-table">
+    <thead><tr><th>Capa</th><th>Condición</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Capa 1</strong></td>
+        <td><span class="check">✓</span> Las 4 señales alineadas (4/4)</td>
+        <td>SMA20 + SMA80 + LinReg89 + AVWAP — todas con pendiente en la misma dirección</td>
+      </tr>
+      <tr>
+        <td><strong>Capa 2</strong></td>
+        <td><span class="check">✓</span> Zona A o A+</td>
+        <td>Precio dentro de <code>ZoneVerde × ATR</code> del AVWAP, o pin bar de rechazo exacto en el AVWAP</td>
+      </tr>
+      <tr>
+        <td><strong>Capa 3 <span class="v2-tag">V2</span></strong></td>
+        <td><span class="check">✓</span> AVWAP confirma vs BM Keltner</td>
+        <td>
+          <strong>Alcista:</strong> AVWAP activo &gt; línea media (BM) del canal Keltner<br>
+          <strong>Bajista:</strong> AVWAP activo &lt; línea media (BM) del canal Keltner
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.88rem;color:var(--text2);margin-top:0.5rem">Las 3 capas deben cumplirse simultáneamente. Si falta cualquiera de las tres → no es verde.</p>
+</div>
+
+<!-- AMARILLO -->
+<div class="card card-yellow">
+  <div class="card-title">🟡 SEMÁFORO AMARILLO — Media probabilidad (evaluar con cuidado)</div>
+  <p>Hay señal parcial pero no suficiente convicción para entrada de alta probabilidad. Puede ser una oportunidad si el contexto lo justifica, pero aumentar el análisis antes de entrar.</p>
+  <table class="cond-table">
+    <thead><tr><th>Escenario</th><th>Condición</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>A</td>
+        <td>4/4 señales + zona B o B+ (precio alejado del AVWAP)</td>
+      </tr>
+      <tr>
+        <td>B</td>
+        <td>3/4 señales + zona A o A+ (falta una señal de tendencia)</td>
+      </tr>
+      <tr>
+        <td>C <span class="v2-tag">V2</span></td>
+        <td>4/4 señales + zona A/A+ <strong>PERO</strong> AVWAP NO confirma vs Keltner BM → degrada de verde a amarillo</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="tip">
+    <strong>Escenario C (solo en V2):</strong> En la V1, este escenario habría sido verde. En V2 es amarillo porque el AVWAP está en el lado "equivocado" del canal, lo que indica que el precio puede estar en zona de compresión o transición. El setup existe pero no tiene la confirmación estructural completa.
+  </div>
+</div>
+
+<!-- ROJO -->
+<div class="card card-red">
+  <div class="card-title">🔴 SEMÁFORO ROJO — No operar (esperar)</div>
+  <p>Las señales son mixtas, el precio está fuera de zona, o la configuración de indicadores no corresponde a ningún patrón reconocible. <strong>No hay setup.</strong></p>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>4. La nueva condición V2 explicada visualmente</h2>
+
+<h3>¿Qué es el Keltner BM (línea media)?</h3>
+<p>El canal Keltner tiene tres líneas: la banda superior, la banda inferior, y la <strong>línea media (BM = Band Middle)</strong>. La BM es una EMA del precio típico y actúa como el "equilibrio" del canal.</p>
+
+<div class="compare">
+  <div class="card card-green compare-panel v2">
+    <h4>✅ AVWAP confirma (BM ok)</h4>
+    <p style="font-size:0.88rem;color:var(--text2)"><strong>Caso ALCISTA:</strong><br>AVWAP está POR ENCIMA de la BM → el precio flota en la mitad superior del canal → estructura alcista sana, el soporte dinámico está en zona de fuerza.</p>
+    <p style="font-size:0.88rem;color:var(--text2);margin-top:0.5rem"><strong>Caso BAJISTA:</strong><br>AVWAP está POR DEBAJO de la BM → el precio está en la mitad inferior del canal → estructura bajista sana, la resistencia dinámica está en zona de presión.</p>
+  </div>
+  <div class="card card-yellow compare-panel v1">
+    <h4>⚠️ AVWAP NO confirma (degrada a amarillo)</h4>
+    <p style="font-size:0.88rem;color:var(--text2)"><strong>Caso ALCISTA pero AVWAP &lt; BM:</strong><br>Las 4 señales dicen alcista pero el AVWAP está por debajo de la línea media del canal → el precio podría estar en zona de compresión o transición. No hay convicción suficiente.</p>
+    <p style="font-size:0.88rem;color:var(--text2);margin-top:0.5rem"><strong>Caso BAJISTA pero AVWAP &gt; BM:</strong><br>Las señales dicen bajista pero el AVWAP sigue por encima del equilibrio del canal → falta confirmación estructural del movimiento bajista.</p>
+  </div>
+</div>
+
+<h3>¿Por qué es útil esta condición?</h3>
+<p>Imagina que el precio acaba de cruzar por encima del AVWAP (señal alcista) pero el AVWAP todavía está por debajo de la línea media del canal. Esto indica que el movimiento alcista acaba de comenzar y el precio aún no ha confirmado su posición en la mitad superior del canal. La V1 ya lo mostraba verde; la V2 te dice "espera un poco más de confirmación".</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>5. Las 4 señales de la Capa 1</h2>
+
+<table class="cond-table">
+  <thead><tr><th>Señal</th><th>¿Qué mide?</th><th>Alcista</th><th>Bajista</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>SMA 20</strong></td>
+      <td>Media móvil de 20 barras — tendencia de corto plazo</td>
+      <td><span class="check">Pendiente ↑</span></td>
+      <td><span class="cross">Pendiente ↓</span></td>
+    </tr>
+    <tr>
+      <td><strong>SMA 80</strong></td>
+      <td>Media móvil de 80 barras — tendencia de largo plazo</td>
+      <td><span class="check">Pendiente ↑</span></td>
+      <td><span class="cross">Pendiente ↓</span></td>
+    </tr>
+    <tr>
+      <td><strong>LinReg 89</strong></td>
+      <td>Regresión lineal de 89 barras — dirección estadística del precio</td>
+      <td><span class="check">Pendiente ↑</span></td>
+      <td><span class="cross">Pendiente ↓</span></td>
+    </tr>
+    <tr>
+      <td><strong>AVWAP</strong></td>
+      <td>VWAP anclado al swing activo — dirección del leg vigente</td>
+      <td><span class="check">Leg alcista activo</span></td>
+      <td><span class="cross">Leg bajista activo</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>Pendiente:</strong> Se calcula comparando el valor actual del indicador con su valor N barras atrás (parámetro <code>SlopeLookback</code>, por defecto 3 barras). Si el valor actual es mayor → pendiente positiva (alcista). Si es menor → pendiente negativa (bajista).
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>6. Las zonas AVWAP (Capa 2)</h2>
+
+<table class="cond-table">
+  <thead><tr><th>Zona</th><th>Condición</th><th>Color panel</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>A+</strong></td>
+      <td>Pin bar: mecha tocó el AVWAP, cierre en el lado correcto</td>
+      <td><span class="pm-green">■ Verde</span></td>
+      <td>Rechazo/rebote exacto en el AVWAP — señal de alta convicción</td>
+    </tr>
+    <tr>
+      <td><strong>A</strong></td>
+      <td>Precio dentro de <code>ZoneVerde × ATR</code> del AVWAP, lado correcto</td>
+      <td><span class="pm-green">■ Verde</span></td>
+      <td>Precio cerca del AVWAP en zona de entrada ideal</td>
+    </tr>
+    <tr>
+      <td><strong>B+</strong></td>
+      <td>Precio cruzó levemente el AVWAP (undercut/overcut dentro de ZoneVerde)</td>
+      <td><span class="pm-yellow">■ Amarillo</span></td>
+      <td>Posible fakeout — precio probó el otro lado y podría revertir</td>
+    </tr>
+    <tr>
+      <td><strong>B</strong></td>
+      <td>Precio en el lado correcto pero entre ZoneVerde y ZoneAmarilla × ATR</td>
+      <td><span class="pm-orange">■ Naranja</span></td>
+      <td>Precio alejado del AVWAP — setup aceptable pero no ideal</td>
+    </tr>
+    <tr>
+      <td><strong>--</strong></td>
+      <td>Fuera de cualquier zona o AVWAP no disponible</td>
+      <td><span class="pm-gray">■ Gris</span></td>
+      <td>Sin estructura válida — no operar</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>7. Zona de Entrada (Sección 3 del panel)</h2>
+
+<p>Solo se muestra cuando el semáforo está en <strong>VERDE</strong>. Proporciona los niveles exactos para gestionar la operación:</p>
+
+<table class="cond-table">
+  <thead><tr><th>Campo</th><th>Cálculo</th><th>Uso</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Entrada</strong></td>
+      <td><code>Close[0]</code> (cierre de la barra)</td>
+      <td>Precio de entrada conservador (al cierre de la barra de señal)</td>
+    </tr>
+    <tr>
+      <td><strong>AVWAP</strong></td>
+      <td>Valor del leg AVWAP activo</td>
+      <td>Referencia estructural — soporte en alcista, resistencia en bajista</td>
+    </tr>
+    <tr>
+      <td><strong>Stop</strong></td>
+      <td><code>AVWAP ± (ATR × Stop_ATRMult)</code></td>
+      <td>Stop primario con buffer sobre el AVWAP. Si el precio cruza este nivel, el setup se invalida.</td>
+    </tr>
+    <tr>
+      <td><strong>T1</strong></td>
+      <td>Banda Keltner opuesta (superior en alcista, inferior en bajista)</td>
+      <td>Primer objetivo — nivel natural de resistencia/soporte dinámica</td>
+    </tr>
+    <tr>
+      <td><strong>T2</strong></td>
+      <td>Extensión: distancia AVWAP→Keltner proyectada desde la banda</td>
+      <td>Segundo objetivo — extensión del movimiento más allá de la banda</td>
+    </tr>
+    <tr>
+      <td><strong>R:R</strong></td>
+      <td><code>(Target − Entrada) / (Entrada − Stop)</code></td>
+      <td>Relación riesgo/recompensa. Buscar mínimo 1.5:1 para T1 y 2.5:1 para T2.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>8. Keltner Stop/Target (Sección 4 del panel)</h2>
+
+<p>Siempre visible (independiente del color del semáforo). Muestra los niveles de stop y target basados en el ancho del canal Keltner:</p>
+
+<table class="cond-table">
+  <thead><tr><th>Campo</th><th>Cálculo</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Width</strong></td><td>Ancho total del canal: <code>(BM + Offset) − (BM − Offset)</code></td></tr>
+    <tr><td><strong>Stop</strong></td><td><code>Width × Kelt_StopPct</code> (por defecto 30% del ancho)</td></tr>
+    <tr><td><strong>Target</strong></td><td><code>Stop × Kelt_RiskReward</code> (por defecto 2:1)</td></tr>
+  </tbody>
+</table>
+<p>Los valores se muestran en <strong>puntos</strong>, <strong>ticks</strong> y <strong>dólares</strong> según el número de contratos configurado.</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>9. Diferencias V1 vs V2</h2>
+
+<div class="compare">
+  <div class="compare-panel v1">
+    <h4>V1 — EduS_MasterPanel</h4>
+    <ul>
+      <li>Semáforo VERDE con 2 capas: tendencia + zona AVWAP</li>
+      <li>Verde = 4/4 señales + zona A/A+</li>
+      <li>No verifica posición del AVWAP vs canal Keltner</li>
+      <li>Más señales verdes (menos restrictivo)</li>
+      <li>Útil como referencia base</li>
+    </ul>
+  </div>
+  <div class="compare-panel v2" style="border-color:var(--purple-bd)">
+    <h4 style="color:var(--purple)">V2 — EduS_MasterPanel_V2 <span class="v2-tag">NUEVO</span></h4>
+    <ul>
+      <li>Semáforo VERDE con 3 capas: tendencia + zona + BM Keltner</li>
+      <li>Verde = 4/4 señales + zona A/A+ + AVWAP confirma vs BM</li>
+      <li>Verifica que AVWAP está en el "lado correcto" del canal</li>
+      <li>Menos señales verdes (más selectivo)</li>
+      <li>Mayor precisión cuando verde aparece</li>
+      <li>Identifiable por etiqueta <code>[V2]</code> en el panel</li>
+      <li>Muestra fila extra en Señales: "AVWAP vs BM Kelt ✓/✗"</li>
+    </ul>
+  </div>
+</div>
+
+<div class="tip">
+  <strong>Cómo usar ambas en paralelo:</strong> Coloca V1 en posición TopRight y V2 en TopLeft (o viceversa). Cuando <strong>ambas muestren VERDE</strong>, tienes la confirmación más fuerte del sistema. Si V1 muestra verde pero V2 muestra amarillo, el setup existe pero la condición BM no está confirmada — considera reducir tamaño o esperar confirmación adicional.
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>10. Vista del panel en pantalla</h2>
+
+<p>Así se verá el panel V2 cuando el semáforo está en VERDE ALCISTA con la condición BM confirmada:</p>
+
+<div class="panel-mock">
+  <div class="pm-title">EduS · Master Panel <span class="pm-v2tag">[V2]</span></div>
+  <div style="color:#5c637a;text-align:center;font-size:0.8rem;margin-bottom:6px">── Semaforo ──</div>
+  <div style="text-align:center;letter-spacing:10px;margin-bottom:4px">
+    <span style="color:var(--green);font-size:1.2rem">●</span>
+    <span style="color:#2a2d3a;font-size:1.2rem">●</span>
+    <span style="color:#2a2d3a;font-size:1.2rem">●</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+    <span class="pm-green" style="font-weight:700">ALCISTA</span>
+    <span class="pm-green">[A]</span>
+  </div>
+  <div style="color:#2a2d40;text-align:center;font-size:0.75rem;margin-bottom:4px">────────────────</div>
+  <div style="color:#5c637a;text-align:center;font-size:0.8rem;margin-bottom:6px">── Señales  4/4 · Zona A ──</div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-green">■ SMA 20</span><span class="pm-green">+ 6854.25</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-green">■ SMA 80</span><span class="pm-green">+ 6841.80</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-green">■ LinReg 89</span><span class="pm-green">+ 6858.12</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-green">■ AVWAP</span><span class="pm-green">+ 6851.50</span></div>
+  <div style="display:flex;justify-content:space-between;margin-top:4px">
+    <span class="pm-green">■ AVWAP &gt; BM Kelt ✓</span>
+    <span class="pm-gray">BM=6844.20</span>
+  </div>
+  <div style="color:#2a2d40;text-align:center;font-size:0.75rem;margin:6px 0">────────────────</div>
+  <div style="color:#5c637a;text-align:center;font-size:0.8rem;margin-bottom:6px">── Zona Entrada (AVWAP) ──</div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">Entrada:</span><span class="pm-cyan">6857.00</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">AVWAP:</span><span class="pm-gray">6851.50  (soporte)</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">Stop:</span><span class="pm-red">6850.60  (-6.40 pts)</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">T1:</span><span class="pm-green">6878.40  R:R 3.4</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">T2:</span><span class="pm-orange">6899.30  R:R 6.8</span></div>
+  <div style="color:#2a2d40;text-align:center;font-size:0.75rem;margin:6px 0">────────────────</div>
+  <div style="color:#5c637a;text-align:center;font-size:0.8rem;margin-bottom:6px">── Keltner Stop / Target ──</div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">Width:</span><span class="pm-cyan">27.60 pts</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">Stop 30%:</span><span class="pm-red">8.28 pts  33 tks  $413</span></div>
+  <div style="display:flex;justify-content:space-between"><span class="pm-gray">Target 2.0:1:</span><span class="pm-green">16.56 pts  66 tks  $828</span></div>
+</div>
+
+<p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text2)">La línea <code>AVWAP &gt; BM Kelt ✓</code> es la nueva condición V2. Cuando aparece en verde con ✓, las 3 capas están confirmadas. Cuando aparece en amarillo con ✗, el semáforo degrada a amarillo aunque el resto sea perfecto.</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>11. Parámetros configurables</h2>
+
+<h3>Grupo 1 — Secciones</h3>
+<table class="cond-table">
+  <thead><tr><th>Parámetro</th><th>Por defecto</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>Semaforo</td><td>true</td><td>Muestra las bolas del semáforo y la dirección</td></tr>
+    <tr><td>4 Senales</td><td>true</td><td>Muestra la tabla de 4 señales + nueva fila BM V2</td></tr>
+    <tr><td>Zona Entrada</td><td>true</td><td>Muestra entrada/stop/targets (solo si verde)</td></tr>
+    <tr><td>Keltner Stop/Target</td><td>true</td><td>Muestra ancho de banda y niveles de gestión</td></tr>
+  </tbody>
+</table>
+
+<h3>Grupo 2 — Periodos</h3>
+<table class="cond-table">
+  <thead><tr><th>Parámetro</th><th>Por defecto</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>SMA20</td><td>20</td><td>Periodo de la media móvil rápida</td></tr>
+    <tr><td>SMA80</td><td>80</td><td>Periodo de la media móvil lenta</td></tr>
+    <tr><td>LinReg</td><td>89</td><td>Periodo de la regresión lineal</td></tr>
+    <tr><td>Barras atras pendiente</td><td>3</td><td>Cuántas barras atrás se compara para calcular la pendiente. Más barras = menos sensible pero más estable.</td></tr>
+    <tr><td>AVWAP Swing Period</td><td>50</td><td>Periodo para detectar los swings del AVWAP dinámico</td></tr>
+    <tr><td>AVWAP Base APT</td><td>20</td><td>Parámetro base del AVWAP dinámico</td></tr>
+    <tr><td>ATR Periodo</td><td>14</td><td>Periodo del ATR para calcular las zonas</td></tr>
+  </tbody>
+</table>
+
+<h3>Grupo 3 — Zonas AVWAP</h3>
+<table class="cond-table">
+  <thead><tr><th>Parámetro</th><th>Por defecto</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>Zona VERDE (ATR x)</td><td>0.5</td><td>Multiplicador ATR para definir zona A. Precio dentro de 0.5×ATR del AVWAP = zona verde.</td></tr>
+    <tr><td>Zona AMARILLA (ATR x)</td><td>2.0</td><td>Límite exterior. Precio entre ZoneVerde y 2×ATR = zona amarilla.</td></tr>
+    <tr><td>Stop Mult ATR</td><td>0.5</td><td>Buffer del stop sobre el AVWAP. Stop = AVWAP ± (ATR × 0.5).</td></tr>
+  </tbody>
+</table>
+
+<h3>Grupo 4 — Keltner</h3>
+<table class="cond-table">
+  <thead><tr><th>Parámetro</th><th>Por defecto</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>Periodo</td><td>52</td><td>Periodo de la EMA del canal Keltner</td></tr>
+    <tr><td>Multiplicador</td><td>3.5</td><td>Ancho del canal en múltiplos de ATR(H-L)</td></tr>
+    <tr><td>Stop % de banda</td><td>0.30</td><td>30% del ancho de banda como stop de referencia</td></tr>
+    <tr><td>Risk/Reward ratio</td><td>2.0</td><td>Target = Stop × RR</td></tr>
+    <tr><td>Contratos</td><td>1</td><td>Para calcular el P&L en dólares del stop y target</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>12. Preguntas frecuentes para Junior Traders</h2>
+
+<div class="card card-blue">
+  <div class="card-title">¿Por qué el panel muestra amarillo aunque las 4 señales estén verdes?</div>
+  <p>Hay tres razones posibles: (1) el precio está en zona B o B+ en lugar de zona A/A+; (2) solo 3 de 4 señales están alineadas; o (3) en V2: las señales y la zona son correctas pero el AVWAP no está confirmado respecto al Keltner BM. Revisa la fila "AVWAP vs BM Kelt" en el panel.</p>
+</div>
+
+<div class="card card-blue">
+  <div class="card-title">¿Cuándo el verde V2 es más fiable que el verde V1?</div>
+  <p>Siempre que aparezca verde en V2 también lo habrá en V1 (V2 es más restrictivo). Un verde V2 indica que las 3 capas están confirmadas: la tendencia de los 4 indicadores, la cercanía al AVWAP, <strong>y</strong> que el AVWAP está en el lado correcto del canal. Es una señal de mayor convicción estructural.</p>
+</div>
+
+<div class="card card-blue">
+  <div class="card-title">¿Puedo operar en amarillo?</div>
+  <p>Sí, pero con precaución. En amarillo el sistema dice "hay algo interesante pero falta confirmación". Si el amarillo es por escenario C (degradación por BM en V2), podrías esperar a que el AVWAP cruce la BM. Si es por zona B, esperar que el precio retroceda a zona A. En general, en amarillo reducir el tamaño de posición a la mitad.</p>
+</div>
+
+<div class="card card-blue">
+  <div class="card-title">¿Por qué la V2 puede tener menos señales verdes que la V1?</div>
+  <p>Porque agrega un filtro adicional (Capa 3). En sesiones de consolidación o cuando el precio está entre el AVWAP y la BM del canal, la nueva condición no se cumplirá. Esto es intencional: filtra setups de menor calidad estructural. Menos verdes, pero más limpios.</p>
+</div>
+
+<div class="card card-blue">
+  <div class="card-title">¿Cómo identifico cuál panel es V1 y cuál es V2 en el chart?</div>
+  <p>El panel V2 muestra la etiqueta <code style="color:var(--purple)">[V2]</code> en lila en la esquina superior derecha del título. Además, la sección de Señales incluye una fila extra con el estado "AVWAP vs BM Kelt ✓/✗" que no existe en V1.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>13. Recomendaciones para Traders Junior</h2>
+
+<div class="card card-purple">
+  <div class="card-title">Flujo de trabajo recomendado con V1 y V2 en paralelo</div>
+  <ol style="padding-left:1.3rem;color:var(--text2);font-size:0.9rem;line-height:2">
+    <li>Verifica la dirección general del mercado en timeframe mayor (15min o mayor)</li>
+    <li>En tu timeframe de operación, observa el semáforo V2 — espera VERDE</li>
+    <li>Confirma que V1 también muestra VERDE (si V1 también verde: máxima convicción)</li>
+    <li>Revisa la fila "AVWAP vs BM Kelt ✓" — debe mostrar ✓ verde</li>
+    <li>Anota los precios de Entrada, Stop y T1 que muestra el panel</li>
+    <li>Espera el cierre de la barra de señal antes de entrar</li>
+    <li>No entres si el semáforo cambió de verde a amarillo antes del cierre de la barra</li>
+  </ol>
+</div>
+
+<div class="tip">
+  <strong>Regla de oro:</strong> El semáforo verde es condición necesaria, no suficiente. Siempre confirma con el contexto del mercado (soporte/resistencia, noticias, hora del día). Un verde en las primeras barras de la sesión o cerca del cierre puede tener menor calidad que un verde en la media sesión con volumen activo.
+</div>
+
+<div class="tip">
+  <strong>Sobre el Keltner Width:</strong> Si el ancho del canal (Width) es muy pequeño (&lt;5 pts en ES), el mercado está en consolidación — las señales tienen menor fiabilidad aunque sean verdes. Un width mayor indica más amplitud para capturar el movimiento.
+</div>
+
+<div class="tip">
+  <strong>Sobre el SlopeLookback:</strong> El valor por defecto (3 barras) es sensible pero puede generar cambios frecuentes de pendiente en mercados laterales. Si ves que las señales oscilan mucho entre verde y rojo, intenta aumentar SlopeLookback a 5 o 7 barras para más estabilidad.
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2>14. Resumen de cambios V1 → V2</h2>
+
+<pre>
+ARCHIVO:    EduS_MasterPanel_V2.cs
+CLASE:      EduS_MasterPanel_V2   (paralela a EduS_MasterPanel)
+ENUM:       MasterEstado_V2, ZonaGrado_V2  (renombrados para V2)
+
+VARIABLES NUEVAS:
+  v_avwapSobreBM   bool    → true si AVWAP confirma vs BM Keltner
+  v_keltnerBM      double  → valor actual de la línea media Keltner
+
+LÓGICA NUEVA (en OnBarUpdate):
+  // Cálculo de kMid movido ANTES del bloque de semáforo
+  // para que v_keltnerBM esté disponible en la Capa 3
+
+  // [V2-NEW] Capa 3:
+  if (v_vwapUp)
+      v_avwapSobreBM = avwapActivo > v_keltnerBM;   // alcista: AVWAP sobre BM
+  else
+      v_avwapSobreBM = avwapActivo < v_keltnerBM;   // bajista: AVWAP bajo BM
+
+  // [V2-NEW] Semáforo VERDE requiere v_avwapSobreBM == true
+  // Si v_avwapSobreBM == false con todo lo demás perfecto → AMARILLO
+
+VISUAL NUEVO (en DrawPanel):
+  // Título muestra "[V2]" en lila para identificación
+  // Sección Señales: fila extra "AVWAP vs BM Kelt ✓/✗ BM=xxxx"
+  // Color verde si confirma, amarillo si no confirma
+
+DESCRIPCIÓN DEL INDICADOR:
+  Actualizada con condiciones completas de VERDE y AMARILLO
+  para que los traders Junior lean las reglas desde NT8.
+</pre>
+
+<br>
+<p style="text-align:center;font-size:0.85rem;color:var(--text3)">EduS_MasterPanel_V2 · Sistema EduS_Trader · NinjaTrader 8 · Documentación interna</p>
+
+</div>
+</body>
+</html>
